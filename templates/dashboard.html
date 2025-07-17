@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>College Expense Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Bootstrap & Chart.js CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background-color: #f7f7f9;
+            color: #333;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .card {
+            border-radius: 15px;
+        }
+        .dark-mode .card {
+            background-color: #1f1f1f;
+            border: 1px solid #444;
+        }
+        .summary-card h5 {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .summary-card p {
+            font-size: 1.25rem;
+        }
+        .table-container {
+            border-radius: 15px;
+            background: white;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .dark-mode .table-container {
+            background: #1e1e1e;
+        }
+        .navbar {
+            padding: 1rem;
+        }
+        .dark-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1rem;
+        }
+        .dark-toggle:hover {
+            color: #ffd700;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+        }
+        .btn-primary {
+            border-radius: 10px;
+
+        }
+        .welcome-card {
+    background: linear-gradient(135deg, #e0f7fa, #fff);
+    border-radius: 15px;
+    color: #333;
+}
+.dark-mode .welcome-card {
+    background: linear-gradient(135deg, #2a2a2a, #1f1f1f);
+    color: #f1f1f1;
+}
+
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">📊 College Expense Tracker</a>
+            <div class="d-flex ms-auto align-items-center gap-3">
+                <a class="btn btn-light" href="{{ url_for('income') }}">💵Add/View Income</a>
+                <a class="btn btn-light" href="{{ url_for('savings') }}">💰 Savings</a>
+                <a class="btn btn-light" href="{{ url_for('logout') }}">😫Logout</a>
+                <button class="btn btn-warning" id="themeToggleBtn">🌓</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mb-4">
+    <div class="card shadow-sm p-4 welcome-card text-center">
+        <h3>👋 Welcome, {{ username }}!</h3>
+        <p class="text-muted">Let's manage your money smartly today.</p>
+    </div>
+</div>
+
+    
+
+    <div class="container">
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm summary-card">
+                    <h5>Total Income</h5>
+                    <p class="fw-bold text-success">₹ {{ total_income }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm summary-card">
+                    <h5>Total Expenses</h5>
+                    <p class="fw-bold text-danger">₹ {{ total_expense }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm summary-card">
+                    <h5>Money Left</h5>
+                    <p class="fw-bold text-primary">₹ {{ money_left }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Card -->
+        <div class="card p-4 mb-4 shadow-sm">
+            <h5 class="mb-3">Expense Breakdown by Category</h5>
+            <canvas id="expenseChart" height="100"></canvas>
+        </div>
+
+        <!-- Recent Expenses Table -->
+        <div class="card shadow-sm p-4 table-container">
+            <h5 class="mb-3">Recent Expenses</h5>
+            {% if expenses %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>{{ expense.date }}</td>
+                                <td>{{ expense.category }}</td>
+                                <td>₹{{ expense.amount }}</td>
+                                <td>{{ expense.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No expenses yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Add Expense Form -->
+        <div class="card p-4 mt-4 shadow-sm">
+            <h5 class="mb-3">➕ Add New Expense</h5>
+            <form method="POST" action="{{ url_for('dashboard') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Amount</label>
+                        <input type="number" name="amount" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" name="description" class="form-control">
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn btn-primary px-4">Add Expense</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Summary Section -->
+        <h3 class="mt-5 mb-3">Summary</h3>
+<div class="row g-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card summary-card bg-success-subtle text-success shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="card-title">Total Income</h6>
+                <p class="h5 fw-bold">₹{{ total_income }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card summary-card bg-danger-subtle text-danger shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="card-title">Total Expenses</h6>
+                <p class="h5 fw-bold">₹{{ total_expense }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card summary-card bg-primary-subtle text-primary shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="card-title">Money Left</h6>
+                <p class="h5 fw-bold">₹{{ money_left }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card summary-card bg-warning-subtle text-warning shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="card-title">Total Saved</h6>
+                <p class="h5 fw-bold">₹{{ total_saved }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Hidden data for JS -->
+    <div id="chartData"
+        data-labels='{{ expense_labels | tojson | safe }}'
+        data-values='{{ expense_values | tojson | safe }}'>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const chartData = document.getElementById('chartData');
+            const labels = JSON.parse(chartData.dataset.labels);
+            const data = JSON.parse(chartData.dataset.values);
+
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Amount Spent (₹)',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- Theme Toggle Script -->
+    <script>
+        const toggleBtn = document.getElementById('themeToggleBtn');
+
+        window.onload = () => {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        };
+
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', theme);
+        });
+    </script>
+</body>
+</html>
